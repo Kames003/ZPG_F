@@ -208,3 +208,65 @@ Scene                = Polica s knihami
 DrawableObject       = Jednotlivá kniha
 
 
+## Vysvetlenie konceptu observer 
+
+
+```plain
+Subject (abstraktná trieda)
+├── attach(Observer)     - pridá observera do zoznamu
+├── detach(Observer)     - odstráni observera
+└── notify()             - upozorní všetkých observerov
+
+Observer (interface)
+└── update()             - metóda volaná pri notifikácii
+
+ConcreteSubject          ConcreteObserver
+├── getState()           └── update()
+└── setState()               └── observerState = subject->getState()
+
+
+```
+
+Ako to funguje:
+
+Subject (Pozorovateľný) drží zoznam Observerov
+Keď sa zmení stav Subjectu (napr. pozícia kamery), zavolá notify()
+notify() prejde všetkých observerov a zavolá ich update()
+Každý Observer si v update() vytiahne nový stav zo Subjectu
+
+
+2. Vzťah medzi Camera a ShaderProgram v našom projekte
+
+Prečo potrebujeme Observer?
+
+Problém
+
+Keď sa hýbe kamera (WSAD, myš), mení sa jej view matrix
+Shader potrebuje túto view matrix na správne vykreslenie scény
+Bez observera by sme museli manuálne volať shaderProgram->setViewMatrix() po každom pohybe kamery
+
+Riešenie:
+
+Camera je Subject (ConcreteSubject)
+ShaderProgram je Observer (ConcreteObserver)
+Keď sa kamera pohne → automaticky notifikuje shader → shader si aktualizuje view matrix
+
+Konkrétna implementácia:
+
+
+```plain 
+
+Camera (Subject)                    ICameraObserver (Interface)
+├── observers[]                     └── update(Camera*)
+├── attach(ICameraObserver*)        
+├── detach(ICameraObserver*)        ShaderProgram (Observer)
+├── notify()                        └── update(Camera* cam)
+└── moveForward()                       └── setMatrix("view", cam->getViewMatrix())
+    └── notify()  // <- zavolá sa!
+
+
+
+
+```
+
+
