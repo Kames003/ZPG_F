@@ -28,4 +28,4 @@ setUniform() s rovnakým názvom, ale rôznymi signatúrami:
 
 Kompilátor automaticky vyberie správnu verziu na základe typu argumentu.
 
-prakticky sa jedná o valídne preťaženie nakolko názov metódy ostáva rovnaký mení sa len počat arguemntov a ich datatype 
+prakticky sa jedná o valídne preťaženie v c++ pretože názov metódy ostáva rovnaký mení sa ich ( parameter list ) = len počat arguemntov a ich datatype kompilátor to rozpozná na základe typov odovzdaných parametrov 
