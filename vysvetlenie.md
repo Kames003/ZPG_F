@@ -21,3 +21,11 @@ validne pretazenie
     void setUniform(const char* name, float value);
     void setUniform(const char* name, const glm::vec3& value);
     void setUniform(const char* name, const glm::mat4& value);
+
+prečo je toto valídne preťaženie ? 
+
+setUniform() s rovnakým názvom, ale rôznymi signatúrami:
+
+Kompilátor automaticky vyberie správnu verziu na základe typu argumentu.
+
+prakticky sa jedná o valídne preťaženie nakolko názov metódy ostáva rovnaký mení sa len počat arguemntov a ich datatype 
