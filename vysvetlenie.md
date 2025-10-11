@@ -269,4 +269,85 @@ Camera (Subject)                    ICameraObserver (Interface)
 
 ```
 
+3️⃣ Môj navrhovaný prístup: Jedna kamera + statická view matrix
+
+✅ Výhody:
+
+Optimálne využitie pamäte: Statická view matrix je len glm::mat4 (64 bytes)
+Zachováva pozíciu: Scéna 7 → 6 → 7 uchováva pozíciu kamery
+Efektívne: Observer pattern pracuje len v scéne 7
+Flexibilný reset: Môžeš resetovať kameru len pri 1-6 → 7, nie pri 7 → 6 → 7
+Čitateľný kód: Jasne vidno, kedy sa používa statická vs. dynamická view matrix
+Škálovateľné: Ľahko pridáš ďalšie 3D scény, prakticky a len vytvoríme buď novú inštanciu alebo budeme len zdielat zo sceny 7 
+
+❌ Nevýhody:
+
+Mierne komplexnejšia logika prepínania (ale iba o pár riadkov)
+
+Zložitosť: 🟡 Nízka-Stredná, UX: 🟢 Dobrý
+
+------
+
+alternatívny prístup 
+
+Camera* staticCamera;   // Pre scény 1-6
+Camera* dynamicCamera;  // Pre scénu 7
+
+✅ Výhody:
+
+Jasná separácia zodpovedností
+Každá kamera má svoj stav
+Pozícia v scéne 7 sa automaticky zachováva
+
+❌ Nevýhody:
+
+Zbytočná pamäť: Statická kamera sa nikdy nepohybuje → zbytočná inštancia
+Duplicita observerov: Musíš registrovať obe kamery k shader programom
+Komplikovanejšie prepínanie: Musíš manuálne upravovať, ktorá kamera je aktívna
+Neefektívne: Statická kamera volá notify() aj keď sa nič nemení
+
+---- 
+bugs : 
+
+🔍 Prečo to predtým nefungovalo?
+Problém č. 1: Neinicializovaná viewMatrix v konštruktore
+Pôvodný kód v Camera.cpp:
+
+Camera::Camera(glm::vec3 pos, glm::vec3 up, float yaw, float pitch)
+    : position(pos), worldUp(up), yaw(yaw), pitch(pitch),
+      movementSpeed(2.5f), mouseSensitivity(0.1f)
+{
+    front = glm::vec3(0.0f, 0.0f, -1.0f);
+    updateCameraVectors();
+    // ❌ viewMatrix NIE JE inicializovaná!
+}
+
+Čo sa stalo:
+
+Kamera sa vytvorí s pozíciou (0, 1, 5)
+updateCameraVectors() vypočíta front, right, up vektory
+ALE viewMatrix ostáva neinicializovaná → obsahuje garbage data (náhodné hodnoty z pamäte)
+
+Problém č. 2: View matrix sa aktualizovala len pri pohybe
+Pozri sa na Camera::notify():
+cppvoid Camera::notify()
+{
+    // ✅ TU sa viewMatrix aktualizuje
+    viewMatrix = glm::lookAt(position, position + front, up);
+    
+    // Notifikuj observerov
+    for (ICameraObserver* observer : observers)
+    {
+        observer->update(this);
+    }
+}
+Kedy sa volala notify()?
+
+❌ NIE pri vytvorení kamery (konštruktor nevolá notify())
+✅ Len pri pohybe kamery (moveForward, moveBackward, atď.)
+✅ Len pri rotácii myšou (processMouseMovement)
+
+
+
+
 
