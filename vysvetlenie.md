@@ -453,7 +453,75 @@ camera->getViewMatrix();  // Chcem view matrix
 camera->getPosition();     // Chcem pozíciu
 camera->getFront();        // Chcem smer
 
+// Tvoj kód:
+Camera* camera = new Camera();
+ShaderProgram* shader1 = new ShaderProgram(...);
+
+camera->attach(shader1);  // ← "Odber" na kameru!
+// Teraz je shader1 v zozname observers
+
+camera->moveForward();  // ← Kamera sa pohla!
+// ↓
+notify() {
+    for (ICameraObserver* obs : observers)
+        obs->update(this);  // ← Shader dostane update!
+}
 
 
+📌 Registrácia - detailný rozpis
+
+camera->attach(shaderProgram1);
+
+// 1. VOLANIE metódy attach() na Camera objekte
+camera->attach(shaderProgram1);
+//      ^^^^^^ Metóda Camera::attach()
+//             ^^^^^^^^^^^^^^^ Pointer na ShaderProgram objekt (napr. 0x1000)
+
+// 2. VNÚTRI metódy attach():
+void Camera::attach(ICameraObserver* observer)  // observer = 0x1000
+{
+    observers.push_back(observer);  // Pridaj pointer do vectora
+    //        ^^^^^^^^^
+    //        Systémová funkcia std::vector::push_back()
+}
+
+// 3. VÝSLEDOK:
+// observers = [0x1000]  // Vector obsahuje pointer na shaderProgram1
+
+
+------------
+
+
+špecifiká pre pointre v jazyku c++ 
+
+ShaderProgram* shader1 = new ShaderProgram(...);
+//             ^^^^^^^ Pointer (adresa objektu v pamäti, napr. 0x1000)
+
+camera->attach(shader1);
+//             ^^^^^^^ Posielam ADRESU, nie kópiu objektu!
+
+// observers = [0x1000]  // Vector ukladá ADRESU!
+
+prečo pointre ? 
+
+std::vector<ShaderProgram> observers;  // Vector OBJEKTOV, nie pointerov!
+
+observers.push_back(shaderProgram1);  // ❌ SKOPÍRUJE celý objekt!
+// observers = [KÓPIA shaderProgram1]
+
+// PROBLÉM:
+for (ShaderProgram& obs : observers) {
+    obs.update(camera);  // Aktualizuješ KÓPIU, nie originál! ❌
+}
+
+std::vector<ICameraObserver*> observers;  // Vector POINTEROV!
+
+observers.push_back(shaderProgram1);  // ✅ Uloží len ADRESU (8 bytov)
+// observers = [0x1000]  // Pointer na originál!
+
+// SPRÁVNE:
+for (ICameraObserver* obs : observers) {
+    obs->update(this);  // Aktualizuješ ORIGINÁL! ✅
+}
 
 
