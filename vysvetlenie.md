@@ -349,5 +349,111 @@ Kedy sa volala notify()?
 
 
 
+🎯 Zhrnutie - Prečo shadery potrebujú view matrix?
+
+
+1. View matrix definuje, čo kamera vidí
+
+Objekt vo world space: (5, 0, -10)
+Kamera na: (0, 1, 3)
+
+↓ View matrix
+
+Objekt v camera space: (5, -1, -13)  // Relatívne ku kamere
+
+2. Keď sa kamera pohne, view matrix sa zmení
+
+
+Kamera NA: (0, 1, 3)  → viewMatrix A
+Kamera NA: (0, 1, 0)  → viewMatrix B  // INÁ MATRIX!
+
+
+3. Každý shader potrebuje AKTUÁLNU view matrix
+
+
+
+// Vertex shader:
+gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(vp, 1.0);
+//                               ^^^^^^^^^^^
+//                               Ak je stará → objekt na zlom mieste!
+//                               Ak je nová → objekt na správnom mieste!
+
+
+4. Observer pattern automatizuje aktualizáciu
+
+
+Pohyb kamery → notify() → update všetkých shaderov → všetci majú NOVÚ view matrix
+
+
+1. Kamera sa POHNE (position sa zmení)
+   ↓
+2. notify() sa ZAVOLÁ
+   ↓
+3. View matrix sa PREPOČÍTA (viewMatrix = glm::lookAt(...))
+   ↓
+4. UPOVEDOMIA sa VŠETCI observers
+   ↓
+5. Každý observer (shader) si VYTIAHNE novú view matrix
+   ↓
+6. HOTOVO! ✅
+
+
+void Camera::notify()
+{
+    // 1. Prepočítaj view matrix
+    viewMatrix = glm::lookAt(position, position + front, up);
+    
+    // 2. Upovedom observerov
+    for (ICameraObserver* observer : observers)
+    {
+        observer->update(this);  // <- Pošlem JEN pointer na seba!
+        //                ^^^^
+        //                NIE viewMatrix priamo, ale CELÝ Camera objekt!
+    }
+}
+
+// 3. Observer si SÁM vytiahne view matrix
+void ShaderProgram::update(Camera* camera)
+{
+    use();
+    setUniform("viewMatrix", camera->getViewMatrix());
+    //                       ^^^^^^^^^^^^^^^^^^^^^^^^
+    //                       ZAVOLÁM metódu getViewMatrix() - observer si to vezme SÁM!
+}
+
+
+Spôsob B: "Pull" (vyťahovanie dát) ← TVOJ KÓD! ✅
+
+void Camera::notify()
+{
+    viewMatrix = glm::lookAt(...);
+    
+    for (ICameraObserver* observer : observers)
+    {
+        observer->update(this);  // <- Pošlem pointer na CELÚ kameru
+        //                ^^^^
+    }
+}
+
+void ShaderProgram::update(Camera* camera)
+{
+    use();
+    setUniform("viewMatrix", camera->getViewMatrix());  // Vytiahnem si to SÁM
+    //                       ^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    // BONUS: Môžem si vytiahnut ČO CHCEM!
+    setUniform("cameraPos", camera->getPosition());
+    setUniform("cameraDir", camera->getFront());
+}
+
+🧠 Tvoj kód používa "Pull" pattern:
+observer->update(this);  // "Hej, niečo sa zmenilo, tu máš prístup ku mne!"
+
+camera->getViewMatrix();  // Chcem view matrix
+camera->getPosition();     // Chcem pozíciu
+camera->getFront();        // Chcem smer
+
+
+
 
 
