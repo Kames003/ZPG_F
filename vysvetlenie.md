@@ -1144,3 +1144,44 @@ Testovanie každého trojuholníka modelu
     │  ╲│
     └───┘
    ```
+
+
+ako funguje toto ? 
+
+void Camera::notify()
+{
+    // 1. PREPOČÍTAJ view matrix (kamera sa pohla/otočila)
+    viewMatrix = glm::lookAt(position, position + front, up);
+
+    // pre kazdy ShaderProgram zavolaj jeho metodu update
+    for (ICameraObserver* observer : observers)
+    {                                   // pouzivame pull pattern
+        observer->update(this); // Tu máš kameru, vytiahni si z nej čo potrebuješ
+    }
+}
+
+
+Analógia: Pizzeria 🍕
+Bez this (zlé):
+Kamera (ty): "Hej ShaderProgram, pohol som sa, aktualizuj sa!"
+ShaderProgram: "OK, ale... kde nájdem tvoje dáta??" 🤷‍♂️
+S this (dobré):
+Kamera (ty): "Hej ShaderProgram, pohol som sa! Tu ma máš (this), 
+              pozri sa na moju pozíciu a view matrix!"
+ShaderProgram: "Super, vidím ťa, vytiahnem si view matrix!" 👍
+
+Finálne zhrnutie - NAJJEDNODUCHŠIE
+cppfor (ICameraObserver* observer : observers)
+{
+    observer->update(this);
+}
+Pre každého v zozname:
+
+observer = momentálny shader program
+->update() = zavolaj funkciu update() na ňom
+this = pošli mu seba (kameru), aby vedel, kto volá a odkiaľ si má vytiahnuť dáta
+
+V jednej vete:
+"Pre každý shader program v zozname zavolaj jeho funkciu update() a daj mu seba (kameru) ako parameter."
+
+
