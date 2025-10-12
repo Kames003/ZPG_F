@@ -58,7 +58,7 @@ Composite (kompozitný objekt)
 Objekt s potomkami
 Obsahuje vector<Component*>
 Implementuje operation() rekurzívne - zavolá operation() na všetkých potomkoch
-
+```cpp
 
 Component : Transformation - base class 
 Leaf - translate, scale, rotation 
@@ -76,7 +76,7 @@ public:
     Transformation();
     virtual glm::mat4 getMatrix();  // ✅ Spoločná operácia
 };
-
+```
 === toto je component, definuje 
 
 Úloha:
@@ -647,6 +647,7 @@ void Application::restoreStaticViewMatrix()
 }
 
 
+```cpp
 
 CPU Side (Aplikácia)                      GPU Side (Shader)
 ─────────────────────────────────────────────────────────────
@@ -669,7 +670,7 @@ Po volaní setUniform():
                                           ✅ Shader teraz používa
                                              statický pohľad
 
-
+```
 Je to prepísanie GPU uniform premennej novými dátami
 staticViewMatrix existuje celý čas v RAM, len sa nahrá do GPU
 
@@ -698,7 +699,7 @@ GLFW je C knižnica → očakáva statické C-style callbacky
 Member funkcie majú skrytý this pointer → nie sú kompatibilné
 
 Naše riešenie: Lambda wrapper + glfwSetWindowUserPointer
-
+```cpp
 void Application::initialization()
 {
     // ... GLFW/GLEW init ...
@@ -710,7 +711,7 @@ void Application::initialization()
     //                              ↑
     //                              Pointer na Application inštanciu
 }
-
+```
 
 Čo sa stalo:
 
@@ -719,6 +720,9 @@ Môžeme ho neskôr vyžiadať späť v callbackoch
 
 
 Krok 2: Lambda wrapper na konverziu statického callbacku
+
+```cpp
+
 cppvoid Application::initialization()
 {
     // ✅ KROK 2: Lambda funkcia ako "bridge"
@@ -735,7 +739,7 @@ cppvoid Application::initialization()
         //  ↑ Teraz máme prístup k app->camera, app->sceneManager, atď.
     });
 }
-
+```
 Rozpisujem to krok po kroku:
 Fáza A: Registrácia (v initialization())
 cpp// T0: Vytvorenie okna
@@ -769,6 +773,9 @@ Fáza B: Callback trigger (keď hráč stlačí klávesu)
    //  ↑ Teraz máme prístup k app->camera, app->sceneManager, atď!
 
 Prístup ku kamere v callback metóde:
+
+```cpp
+
 cppvoid Application::key_callback(GLFWwindow* window, int key, int scancode, 
                                int action, int mods)
 {
@@ -803,6 +810,7 @@ cppvoid Application::key_callback(GLFWwindow* window, int key, int scancode,
         }
     }
 }
+```
 Dôležité:
 
 this pointer je implicitný v member funkciách
@@ -811,6 +819,7 @@ Máme plný prístup k všetkým member premenným a metódam
 
 
 Iné callbacky používajú rovnakú techniku:
+```cpp
 cppvoid Application::initialization()
 {
     // ✅ Cursor position callback
@@ -908,7 +917,7 @@ Vizualizácia celého flow:
 │ }                                                             │
 
 
-
+```
 Záver
 Otázka 1:
 
@@ -1087,7 +1096,7 @@ Problémy:
 Detekcia kolizie s telesom 
 
 A) Bounding Sphere (guľa) 
-
+```plain
 ●  ← Center (x, y, z)
        ╱│╲
       ╱ │ ╲  ← Radius
@@ -1095,8 +1104,9 @@ A) Bounding Sphere (guľa)
       ╲ │ ╱
        ╲│╱
         ●
+```        
 B) AABB (Axis-Aligned Bounding Box) - Kocka zarovnaná s osami
-
+```plain
 Y
       ↑
       │   max (x_max, y_max, z_max)
@@ -1110,6 +1120,8 @@ Y
      ╱
     Z
 
+```
+```plain
 C) OBB (Oriented Bounding Box) - Rotovaná kocka
 
         Y
@@ -1121,7 +1133,8 @@ C) OBB (Oriented Bounding Box) - Rotovaná kocka
       └─────────────────→ X
      ╱
     Z
-
+```
+```plain
  D) Mesh Collision (per-triangle)
 
 Testovanie každého trojuholníka modelu
@@ -1130,4 +1143,4 @@ Testovanie každého trojuholníka modelu
     │ ╲ │     = 36 testov!
     │  ╲│
     └───┘
-   
+   ```
