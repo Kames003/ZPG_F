@@ -1180,8 +1180,49 @@ Pre každého v zozname:
 observer = momentálny shader program
 ->update() = zavolaj funkciu update() na ňom
 this = pošli mu seba (kameru), aby vedel, kto volá a odkiaľ si má vytiahnuť dáta
-
 V jednej vete:
 "Pre každý shader program v zozname zavolaj jeho funkciu update() a daj mu seba (kameru) ako parameter."
+
+
+# Práca na parsery 
+
+GPS koordináty a validácia 
+
+# Tracker môže poslať chybné dáta:
+latitude = 999.123456   # ❌ Neplatné (max je 90)
+longitude = -200.5      # ❌ Neplatné (min je -180)
+
+Kedy to môže nastať : tracker je v tunely / budove = nema gps signal, pošle default hodnotu - 0.0 0.0 niekde v atlantickom ocenae alebo garbage hodnoty 999  , -999 
+alebo nijaký firmware bug, bit flip ale to je vysoko nepravdepodobný case 
+
+= zabranujeme uloženiu nezmyslov, ochrana front endu, detekujeme hardware a firmware problemy 
+= o vysledku mame teda data čiste pre samotnú analyzu 
+
+--
+
+battery validácia = chybne čitanie senzorov, firmware bugs
+detekujeme : hardware problemy 
+analytics : battery life analýza je presna 
+UX : ukažem radšej unknown na frontende než 150 percent 
+
+timezone-aware-datetime 
+fix pre spravne ukladanie postgresSQL aby správne ukladala timestamp with timezone 
+
+
+RSSI / SNR VAlidácia 
+
+RSSI = meria kvalitu signálu v dBm ( decibel-milliwats)
+rozsah od -120dBm velmi slaby až 0 dBM (perfektný)
+
+SNR (signal to noise ratio)
+
+Statistic tracking 
+
+Monitorovanie zdravia systému 
+detekcia firmware problemov 
+optimalizácia trackera 
+= z toho sa bude dať reportovať pre BP 
+
+
 
 
