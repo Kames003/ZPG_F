@@ -1223,6 +1223,97 @@ detekcia firmware problemov
 optimalizácia trackera 
 = z toho sa bude dať reportovať pre BP 
 
+----------
+
+
+ Composite Pattern - Detailná analýza
+
+### 📊 Štruktúra UML diagramu
+```text
+
+drawableobject(client)   --->    TransformComponent (abstraktná)
+                            |
+                            |
+           +----------------+----------------+
+          |                                 |
+    LEAF triedy                    TransformComposite
+    (elementárne)                       |
+          |                             |
+    - Translate                   vector<TransformComponent*>
+    - Rotate                            |
+    - Scale                             | môže obsahovať
+                                        v
+                              - Translate/Rotate/Scale
+                              - ALEBO ďalší TransformComposite!
+
+
+```
+Vysvetlenie : 
+
+DrawableObject je klient, ktorý používa TransformComponent*
+Nezaujíma ho, či dostane Leaf alebo Composite
+Presne ako na UML diagrame: Client → Component
+
+Component → TransformComponent
 
 
 
+
+
+// ✅ JASNÉ názvy:
+TransformComponent    // "Aha, toto je Component z Composite pattern"
+TransformComposite    // "Aha, toto je Composite z Composite pattern"
+Translate, Rotate     // "Aha, toto sú Leaf elementy"
+
+
+// Vytvor "sub-group" transformácií
+TransformComposite* subGroup = new TransformComposite();
+subGroup->addComponent(new Translate(1.0f, 0.0f, 0.0f));
+subGroup->addComponent(new Scale(0.5f, 0.5f, 0.5f));
+
+// Hlavný composite obsahuje sub-group!
+TransformComposite* main = new TransformComposite();
+main->addComponent(subGroup);  // ✅ Composite obsahuje Composite!
+main->addComponent(new Rotate(90.0f, 0.0f, 1.0f, 0.0f));
+
+DrawableObject* obj = new DrawableObject(model, main, shader);
+// ✅ Rekurzia! getMatrix() sa zavolá rekurzívne
+
+
+=== prakticky nám to umožní dať lubovolny počet transformcomponent teda vytvoriť tzv zloženú transformáciu z elementárnych 
+
+implementácia observera 
+
+Prečo je pull pattern ten správny prístup ?
+
+Subject nerozhoduje čo poslať, len hovorí "hej" niečo sa zmenilo 
+Každý observer si vezme len to, čo potrebuje
+Pridanie nového observera nevyžaduje zmenu interface
+
+
+```cpp
+
+// SPRÁVNE - to čo máte:
+class ICameraObserver {
+    virtual void update(Camera* camera) = 0;
+    //                  ^^^^^^^^^^^^^^
+    //                  Observer si vytiahne ČO potrebuje
+};
+
+// ShaderProgram - potrebuje view matrix
+void ShaderProgram::update(Camera* camera) {
+    setUniform("viewMatrix", camera->getViewMatrix());
+}
+
+// Controller - potrebuje len position (hypoteticky)
+void Controller::update(Camera* camera) {
+    glm::vec3 pos = camera->getPosition();
+    // Spracuj len pozíciu
+}
+
+// Light - potrebuje direction (hypoteticky)
+void Light::update(Camera* camera) {
+    glm::vec3 dir = camera->getFront();
+    // Spracuj len smer
+}
+```
