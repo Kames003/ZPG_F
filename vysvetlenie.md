@@ -1371,3 +1371,41 @@ moonOrbit->addTransformation(new Rotate(moonAngle, 0.0f, 1.0f, 0.0f));
 moonOrbit->addTransformation(new Translate(0.4f, 0.0f, 0.0f));
 
 // ✅ Composite sa postará o násobenie matíc!
+
+
+// # Strategy pattern pre načítanie z filu opýtaj sa na cvikách 
+
+Dobrý deň,
+Chcel by som sa opýtať na implementáciu Strategy Patternu pri načítavaní shaderov.
+Vytvoril som si interface IShaderLoader s dvoma implementáciami:
+
+FileShaderLoader - načítava shader kód zo súboru (.vert, .frag)
+InlineShaderLoader - umožňuje vložiť shader kód priamo ako string
+
+Dôvod: V budúcnosti by som mohol pridať ďalšie stratégie, napríklad:
+
+NetworkShaderLoader - sťahovanie shaderov zo servera
+CompressedShaderLoader - načítanie zo ZIP archívu
+DatabaseShaderLoader - uložené v databáze
+
+Je tento prístup správny z pohľadu návrhu? Alebo je lepšie použiť len jednoduchú funkciu na načítanie zo súboru bez pattern?
+Ďakujem za odpoveď.
+
+Bonus: Argumenty PRE Strategy Pattern
+Ak ti učiteľ povie "Prečo to nemáš len ako funkciu?", použi tieto argumenty:
+
+Open/Closed Principle - Môžem pridať novú stratégiu bez úpravy Shader triedy
+Testovanie - Jednoducho si vytvorím MockShaderLoader pre unit testy
+Flexibilita - V budúcnosti:
+
+NetworkShaderLoader - hot-reload shaderov z dev servera
+CachedShaderLoader - cache skompilovaných shaderov
+EncryptedShaderLoader - šifrované shadery (ochrana IP)
+
+
+Separation of Concerns - Shader trieda nemusí vedieť o file I/
+
+
+
+
+
