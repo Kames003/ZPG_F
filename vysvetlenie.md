@@ -1317,3 +1317,57 @@ void Light::update(Camera* camera) {
     // Spracuj len smer
 }
 ```
+
+ako funguje scéna so slnečnou sústavou ? 
+
+glm::mat4 getMatrix() {
+    glm::mat4 result = glm::mat4(1.0f);  // I (jednotková matica)
+    
+    // Transformácia 1: Rotate(earthAngle)
+    result = result * transformations[0]->getMatrix();
+    // result = I * R1
+    
+    // Transformácia 2: Translate(1.2, 0, 0)
+    result = result * transformations[1]->getMatrix();
+    // result = I * R1 * T1
+    
+    // Transformácia 3: Rotate(moonAngle)
+    result = result * transformations[2]->getMatrix();
+    // result = I * R1 * T1 * R2
+    
+    // Transformácia 4: Translate(0.4, 0, 0)
+    result = result * transformations[3]->getMatrix();
+    // result = I * R1 * T1 * R2 * T2
+    
+    // Transformácia 5: Scale(0.05)
+    result = result * transformations[4]->getMatrix();
+    // result = I * R1 * T1 * R2 * T2 * S
+    
+    return result;
+}
+```
+
+### **Finálna matica:**
+```
+Mesiac = R1(earthAngle) × T1(1.2, 0, 0) × R2(moonAngle) × T2(0.4, 0, 0) × S(0.05)
+         ↑               ↑                ↑                ↑                ↑
+         Rotuj okolo     Choď k Zemi      Rotuj okolo     Vzdialenosť     Veľkosť
+         Slnka                            Zeme            od Zeme         Mesiaca
+         
+## ✅ Výhody Composite Pattern
+
+### **1. Hierarchické transformácie**
+```
+Slnko (0, 0, 0)
+  │
+  └─ Zem (rotuje okolo Slnka)
+       │
+       └─ Mesiac (rotuje okolo Zeme, ktorá rotuje okolo Slnka)
+         
+// ✅ Jednoducho pridáš transformácie v poradí
+moonOrbit->addTransformation(new Rotate(earthAngle, 0.0f, 1.0f, 0.0f));
+moonOrbit->addTransformation(new Translate(1.2f, 0.0f, 0.0f));
+moonOrbit->addTransformation(new Rotate(moonAngle, 0.0f, 1.0f, 0.0f));
+moonOrbit->addTransformation(new Translate(0.4f, 0.0f, 0.0f));
+
+// ✅ Composite sa postará o násobenie matíc!
