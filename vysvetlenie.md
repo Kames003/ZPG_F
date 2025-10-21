@@ -1415,3 +1415,33 @@ Subject (Light, Camera)  ----notifikuje---->  Observer (ShaderProgram)
    |                                              |
 Dedí: Light, Camera                      Dedí: ShaderProgram
 
+
+## Zhrnutie architektúry:
+```
+┌─────────────────────────────────────────┐
+│           Observer Pattern              │
+├─────────────────────────────────────────┤
+│                                         │
+│  Subject (abstraktná trieda)            │
+│  - observerCollection (protected)       │
+│  + attach()                             │
+│  + notifyAll()                          │
+│                                         │
+│         ↑              ↑                │
+│         │              │                │
+│     Light          Camera               │
+│  (ObserverA)    (ObserverB)             │
+│                                         │
+│         │              │                │
+│         └──notifikujú──┘                │
+│                │                        │
+│                ↓                        │
+│         ShaderProgram                   │
+│         (Observer)                      │
+│         + notify(Subject*)              │
+└─────────────────────────────────────────┘
+Kľúčové:
+
+Subject = Ten, kto SA MENÍ (Light, Camera)
+Observer = Ten, kto POČÚVA zmeny (ShaderProgram)
+notify() je v Observeri, pretože Observer musí reagovať na notifikáciu!
