@@ -1406,6 +1406,12 @@ EncryptedShaderLoader - šifrované shadery (ochrana IP)
 Separation of Concerns - Shader trieda nemusí vedieť o file I/
 
 
+# Podstatné 
 
-
+### **Dôležité pochopenie:**
+```
+Subject (Light, Camera)  ----notifikuje---->  Observer (ShaderProgram)
+   ^                                              ^
+   |                                              |
+Dedí: Light, Camera                      Dedí: ShaderProgram
 
