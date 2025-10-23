@@ -2504,7 +2504,7 @@ HIERARCHIA DEDIČNOSTI:
           ┌──────────┴──────────┐
           │                     │
        Camera                Light  ◄─── DOLE (odvodené)
-
+```cpp
 
 DOWNCASTING (Subject* → Camera*):
 ════════════════════════════════════════════════════════
@@ -2797,3 +2797,4 @@ Resource Manager - singleton
 Scene Manager 
 Camaera Manager 
 Light Manager 
+```
