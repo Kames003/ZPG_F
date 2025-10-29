@@ -2798,3 +2798,24 @@ Scene Manager
 Camaera Manager 
 Light Manager 
 ```
+
+Svetla sa nezdielaju medzi scenami 
+Kazda scena spravuje svoje svetla 
+
+opýtaj sa u 2c = race conditions 
+
+Frame N rendering (GPU)
+  ↓
+Window resize callback
+  ↓
+notifyAll()
+  ↓
+shaderProgram->use()  ← Zmení aktívny shader!
+  ↓
+Frame N rendering continues (s CHYBNÝM shaderom!)
+  ↓
+CRASH alebo artefakty
+
+spomen v otazke aj napr event queee 
+
+
