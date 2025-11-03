@@ -2819,3 +2819,305 @@ CRASH alebo artefakty
 spomen v otazke aj napr event queee 
 
 
+
+// Application.cpp (při inicializaci)
+spm->addShaderProgram(camera, "vertex.glsl", "fragment.glsl");
+
+// Interně v ShaderProgramManager:
+void ShaderProgramManager::addShaderProgram(Camera* c, ...)
+{
+    ShaderProgram* sp = new ShaderProgram(c);
+    // ...
+    c->attach(sp);  // ← Shader se PŘIHLÁSÍ k odběru změn kamery
+}
+```
+
+Observer pattern 
+
+**Co se stalo:**
+```
+Camera ──┐
+         ├─→ [observerCollection]
+         │    ├─ phongShader
+         │    ├─ lambertShader
+         │    └─ constantShader
+         └─→ Když se změní, řekni všem!
+
+
+
+// ═══════════════════════════════════════
+// FRAME 1: Kamera se pohne
+// ═══════════════════════════════════════
+
+// 1. UŽIVATEL STISKNE 'W'
+glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS
+
+// 2. CAMERA SE POHNE
+void Camera::controls()
+{
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        cameraPosition += speed * target;  // Pohyb dopředu
+    }
+}
+
+// 3. DETEKCE ZMĚNY
+void Camera::checkChanges()
+{
+    if (checkViewMatrixChanges())  // Změnila se pozice?
+    {
+        // JE ZMĚNA!
+        previousCameraPosition = cameraPosition;  // Ulož novou
+        calculateViewMatrix();  // Přepočítej matici
+        
+        notifyAll(VIEWMATRIX);  // ← POŠLI ZPRÁVU!
+    }
+}
+
+// 4. NOTIFY VŠEM OBSERVERŮM
+void Camera::notifyAll(int message)  // message = 0 (VIEWMATRIX)
+{
+    for (Observer* o : observerCollection)  // 3 shadery
+    {
+        o->notify(0);  // ← Pošle POUZE číslo 0
+    }
+}
+
+// 5. SHADER #1 REAGUJE (PhongShader)
+void ShaderProgram::notify(int message)  // message = 0
+{
+    if (message == VIEWMATRIX)  // 0 == VIEWMATRIX? ANO
+    {
+        activateShaderProgram();  // glUseProgram(ID)
+        
+        // ZEPTEJ SE KAMERY
+        glm::mat4 matrix = camera->getViewMatrix();  // Nová matica!
+        updateUniform("viewMatrix", glm::value_ptr(matrix));
+        
+        deactivateShaderProgram();  // glUseProgram(0)
+    }
+}
+
+// 6. SHADER #2 REAGUJE (LambertShader)
+// ... stejný proces ...
+
+// 7. SHADER #3 REAGUJE (ConstantShader)
+// ... stejný proces ...
+
+// 8. VYKRESLENÍ
+om->drawObjects();  // Všechny objekty mají AKTUÁLNÍ view matrix!
+
+
+
+1️⃣ notify() = Spôsob reakcie observera na zmenuPresne ako si povedal:cpp// Observer.h - INTERFACE (abstraktná trieda)
+class Observer
+{
+public:
+    virtual void notify(int message) = 0;  // ← Čisto virtuálna metóda
+};Co to znamená:
+= 0 = "Každý observer SI MUSÍ sám implementovať svoju reakciu"
+Není žádná defaultní implementace - každý observer reaguje po svojom
+2️⃣ Príklad: Rôzni observeri, rôzne reakcie
+
+class Observer
+{
+public:
+    // "Ak chceš byť observer, MUSÍŠ implementovať notify()"
+    virtual void notify(int message) = 0;
+};
+```
+
+**Kontrakt znamená:**
+```
+Camera: "Ak sa zaregistruješ (attach), sľubuješ mi, 
+         že budeš mať metódu notify(int message)"
+
+ShaderProgram: "OK, implementoval som ju takto: ..."
+AudioManager: "OK, implementoval som ju inak: ..."
+
+
+// ShaderProgram reaguje na OBE:
+void ShaderProgram::notify(int message)
+{
+    if (message == VIEWMATRIX) { /* ... */ }
+    if (message == PROJECTIONMATRIX) { /* ... */ }
+}
+
+// AudioManager reaguje LEN na VIEWMATRIX:
+void AudioManager::notify(int message)
+{
+    if (message == VIEWMATRIX) { /* ... */ }
+    // PROJECTIONMATRIX ignorujem
+}
+```
+
+---
+
+## 7️⃣ Diagram: Kompletný Tok
+```
+╔═══════════════════════════════════════════════════════════╗
+║              OBSERVER PATTERN - KOMPLETNÝ TOK              ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                            ║
+║  1. REGISTRÁCIA (Inicializácia)                          ║
+║     ┌─────────────────────────────────────────┐          ║
+║     │  camera->attach(shaderProgram)          │          ║
+║     │  camera->attach(audioManager)           │          ║
+║     │  camera->attach(shadowMapManager)       │          ║
+║     └─────────────────────────────────────────┘          ║
+║                        ↓                                  ║
+║     Camera.observerCollection = [shader, audio, shadow]  ║
+║                                                            ║
+║  2. ZMENA (Runtime)                                      ║
+║     ┌─────────────────────────────────────────┐          ║
+║     │  camera->checkChanges()                 │          ║
+║     │      ↓                                   │          ║
+║     │  Detekcia: viewMatrix sa zmenila!       │          ║
+║     │      ↓                                   │          ║
+║     │  notifyAll(VIEWMATRIX)                  │          ║
+║     └─────────────────────────────────────────┘          ║
+║                        ↓                                  ║
+║     for (Observer* o : observerCollection)               ║
+║         o->notify(VIEWMATRIX)                            ║
+║                                                            ║
+║  3. REAKCIE (Polymorfizmus)                             ║
+║     ┌─────────────────────────────────────────┐          ║
+║     │  ShaderProgram::notify(VIEWMATRIX)      │          ║
+║     │    → activateShaderProgram()            │          ║
+║     │    → updateUniform("viewMatrix", ...)   │          ║
+║     │    → deactivateShaderProgram()          │          ║
+║     └─────────────────────────────────────────┘          ║
+║     ┌─────────────────────────────────────────┐          ║
+║     │  AudioManager::notify(VIEWMATRIX)       │          ║
+║     │    → updateListenerPosition(...)        │          ║
+║     └─────────────────────────────────────────┘          ║
+║     ┌─────────────────────────────────────────┐          ║
+║     │  ShadowMapManager::notify(VIEWMATRIX)   │          ║
+║     │    → renderShadowMaps()                 │          ║
+║     └─────────────────────────────────────────┘          ║
+║                                                            ║
+╚═══════════════════════════════════════════════════════════╝
+
+// ═══════════════════════════════════════
+// OBSERVER PATTERN V JEDNEJ VETE:
+// ═══════════════════════════════════════
+
+Subject (Camera):
+   "Keď sa zmením, zavolám notify() na všetkých observeroch"
+
+Observer (ShaderProgram/AudioManager/...):
+   "Implementujem si notify() - MÔJ spôsob reakcie"
+
+notify(int message):
+   "Moja VLASTNÁ reakcia na zmenu typu 'message'"
+
+
+---         
+
+🤔 BOD 5 - ZAMYSLENIE A VÝBER RIEŠENIA:
+Možnosti implementácie materiálu:
+Možnosť A: Materiál ako uniform v shaderi (jednoduchšie)
+cppstruct Material {
+    float ambient;   // ra - koeficient ambientného odrazu
+    float diffuse;   // rd - koeficient difúzneho odrazu  
+    float specular;  // rs - koeficient zrkadlového odrazu
+    float shininess; // h - lesk povrchu (Phong exponent)
+};
+uniform Material material;
+Výhody:
+
+✅ Jednoduchá implementácia
+✅ Rýchle prepínanie medzi materiálmi
+✅ Jeden material na celý objekt
+
+Nevýhody:
+
+❌ Jeden material pre celý mesh
+❌ Nemôžeš mať rôzne materiály na častiach objektu
+
+
+Možnosť B: Materiál ako trieda v C++ s bindovaním (flexibilnejšie)
+cppclass Material {
+    float ra, rd, rs, h;
+    void bind(ShaderProgram* sp);
+};
+Výhody:
+
+✅ OOP prístup
+✅ Reusable materials
+✅ Ľahká správa (Material manager)
+✅ Materiálová knižnica (drevo, kov, plast...)
+
+Nevýhody:
+
+❌ Viac kódu
+❌ Potrebné upraviť DrawableObject
+
+
+Možnosť C: Per-vertex materiálové vlastnosti (najflexibilnejšie)
+glslin float vertexAmbient;
+in float vertexDiffuse;
+in float vertexSpecular;
+Výhody:
+
+✅ Rôzne materiály na častiach objektu
+✅ Plynulé prechody
+
+Nevýhody:
+
+❌ Veľmi komplikované
+❌ Veľa dát v VBO
+❌ Overkill pre tento projekt
+
+
+🎯 ODPORÚČANIE: Možnosť B (Material trieda v C++)
+Prečo?
+
+Modulárnosť: Materiály oddelené od objektov
+Reusability: Jeden material pre viacero objektov (napr. všetky stromy = drevo)
+Rozšíriteľnosť: Ľahko pridáš MaterialManager
+Akademický význam: Ukáže pochopenie OOP a OpenGL architektúry
+Real-world approach: Takto sa to robí v produkčných engine-och
+
+Implementácia by vyzerala takto:
+cpp// Material.h
+class Material {
+public:
+    float ambient;    // ra - koeficient ambientného odrazu (0.0 - 1.0)
+    float diffuse;    // rd - koeficient difúzneho odrazu (0.0 - 1.0)
+    float specular;   // rs - koeficient zrkadlového odrazu (0.0 - 1.0)
+    float shininess;  // h - Phong exponent (1 - 256+)
+    
+    Material(float ra, float rd, float rs, float h);
+    void bind(ShaderProgram* shader);
+};
+
+// Príklady materiálov:
+Material* wood = new Material(0.2, 0.8, 0.1, 8.0);     // Matné drevo
+Material* metal = new Material(0.3, 0.5, 1.0, 128.0);  // Lesklý kov
+Material* plastic = new Material(0.2, 0.7, 0.5, 32.0); // Plast
+Chceš, aby som implementoval Material systém?
+
+
+
+RenderLoop v 
+
+
+Application má jediný while loop v celej aplikácii
+Každý frame zavolá sceneManager->renderActiveScene()
+Starý problém: Scény mali vlastné while loopy → prepínanie nefungovalo
+Nové riešenie: Application vlastní loop, scény len vykresľujú frame
+
+
+# Otázky na cvičenia 
+
+1. OpenGL State Machine a správa aktívnych objektov
+"Pán profesor, chcel by som sa uistiť ohľadom správnej práce s OpenGL state machine. Pokiaľ som to správne pochopil, OpenGL funguje na princípe stavového automatu, kde môže byť v danom momente aktívny len jeden buffer, shader program, VAO atď.
+V našej implementácii to znamená, že keď zavoláme napríklad glBindBuffer() alebo glUseProgram(), všetky následné OpenGL operácie sa týkajú práve tohto aktívneho objektu, ktorý je aktuálne "na vrchu zásobníka".
+Preto je dobrá prax:
+
+Aktivovať objekt (bind/use)
+Vykonať s ním potrebné operácie
+Deaktivovať ho (unbind - väčšinou bind(0))
+
+Moja otázka je: Ak niekde v kóde zabudneme korektne unbindnúť shader alebo buffer a niekde inde zavoláme OpenGL funkcie bez explicitného bind, zmeny sa automaticky aplikujú na ten posledný aktívny objekt, že? A môže to spôsobiť, že modifikujeme shader program alebo buffer, ktorý sme vôbec nemali v úmysle meniť?"
