@@ -3135,7 +3135,8 @@ Odpoveď : Je to preto, lebo OpenGL má začiatok súradníc (0,0) v ľavom doln
 
 3. Keď vytvárame SkyBox, prečo musíme volať glClear(GL_DEPTH_BUFFER_BIT) dvakrát - pred a po vykreslení skyboxu?
 
-**Odpoved** : Je to preto, aby skybox nevyplnil z-buffer a objekty scény sa mohli vykresliť normálne? Najprv vykreslíme skybox, vymažeme depth buffer a potom scéna má 'čistý' z-buffer?"
+**Odpoved** : Je to preto, aby skybox neovplyvnil z-buffer scény — po jeho vykreslení sa depth buffer vymaže (glClear(GL_DEPTH_BUFFER_BIT)), takže následné objekty sa vykreslia správne podľa svojej hĺbky.
+Prvé čistenie je pre nový frame, druhé (po skyboxe) zabezpečí, že skybox nebude brániť vykresleniu scény.
 
 4. Je lepšie použiť glGenerateMipmap() alebo si vytvoriť vlastné mipmap levely cez glTexImage2D()?
 
