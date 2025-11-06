@@ -3121,3 +3121,46 @@ Vykonať s ním potrebné operácie
 Deaktivovať ho (unbind - väčšinou bind(0))
 
 Moja otázka je: Ak niekde v kóde zabudneme korektne unbindnúť shader alebo buffer a niekde inde zavoláme OpenGL funkcie bez explicitného bind, zmeny sa automaticky aplikujú na ten posledný aktívny objekt, že? A môže to spôsobiť, že modifikujeme shader program alebo buffer, ktorý sme vôbec nemali v úmysle meniť?"
+
+
+Dotazy ku dňu 6.11.2025 
+
+1. Prečo používame stbi_set_flip_vertically_on_load(true)? Je to kvôli rozdielu medzi OpenGL a bežnými formátmi obrázkov?
+
+Odpoveď : Je to preto, lebo OpenGL má začiatok súradníc (0,0) v ľavom dolnom rohu, zatiaľ čo väčšina obrázkových formátov má začiatok v ľavom hornom rohu?
+
+2. Aký je praktický rozdiel medzi GL_LINEAR_MIPMAP_LINEAR a GL_LINEAR_MIPMAP_NEAREST pri výkone vs. kvalite?
+
+**Odpoved** : LINEAR_MIPMAP_LINEAR robí trilineárnu interpoláciu, takže je náročnejšie na výpočet, ale eliminuje to viditeľné prechody medzi mipmap levelmi?
+
+3. Keď vytvárame SkyBox, prečo musíme volať glClear(GL_DEPTH_BUFFER_BIT) dvakrát - pred a po vykreslení skyboxu?
+
+**Odpoved** : Je to preto, aby skybox nevyplnil z-buffer a objekty scény sa mohli vykresliť normálne? Najprv vykreslíme skybox, vymažeme depth buffer a potom scéna má 'čistý' z-buffer?"
+
+4. Je lepšie použiť glGenerateMipmap() alebo si vytvoriť vlastné mipmap levely cez glTexImage2D()?
+
+**Odpoved** : glGenerateMipmap() je jednoduchšie a rýchlejšie implementovať, ale vlastné mipmapy dávajú väčšiu kontrolu nad kvalitou a detailmi v každom leveli?
+
+5. Pri Cube Mapping - ako presne sa mapuje vec3 texturovacia súradnica na konkrétnu stranu kocky?
+
+**Odpoved** : Vyberie sa strana podľa toho, ktorá zložka vektora (x, y alebo z) má najväčšiu absolútnu hodnotu a podľa znamienka sa určí POSITIVE alebo NEGATIVE?
+
+6. Prečo je SkyDome náročnejší na vrcholy, ale jednoduchší na získanie textúry než SkyBox?
+
+**Odpoved** : Lebo kopula potrebuje viac polygónov na hladký povrch, ale stačí jedna panoramatická textura namiesto šiestich navzájom perfektne zladených obrázkov?
+
+7. Aký je rozdiel medzi GL_REPEAT a GL_CLAMP_TO_EDGE pri GL_TEXTURE_WRAP_S?
+
+**Odpoved** : REPEAT opakuje textúru, keď súradnice presiahnu <0,1>, zatiaľ čo CLAMP_TO_EDGE "natiahne" krajné pixely textúry?
+
+8. Môžeme kombinovať viac textúr na jednom objekte? Ako by sme to riešili cez texture units?
+
+**Odpoved** : Áno, použijeme glActiveTexture(GL_TEXTURE0 + i) pre rôzne jednotky a v shaderi máme viac sampler2D uniformov, ktorým pridelíme príslušné texture unity?
+
+9. Prečo stb_image načítava data ako unsigned char* a nie priamo ako OpenGL textúru?
+
+**Odpoved** : Lebo stb_image je len na načítanie súboru do pamäte - OpenGL textúru musíme vytvoriť my pomocou glGenTextures, glBindTexture a glTexImage2D?
+
+10. Aký je performance rozdiel medzi 2D texturou a 3D volume texturou pri renderingu?
+
+**Odpoved** : 3D textúry sú extrémne pamäťovo náročné - príklad z prezentácie ukazuje, že 1024³ voxelov zaberie asi 4.29 GB, oproti 2D texturám v MB?
