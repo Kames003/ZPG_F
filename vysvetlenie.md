@@ -3165,3 +3165,46 @@ Prvé čistenie je pre nový frame, druhé (po skyboxe) zabezpečí, že skybox 
 10. Aký je performance rozdiel medzi 2D texturou a 3D volume texturou pri renderingu?
 
 **Odpoved** : 3D textúry sú extrémne pamäťovo náročné - príklad z prezentácie ukazuje, že 1024³ voxelov zaberie asi 4.29 GB, oproti 2D texturám v MB?
+
+
+
+
+---- cvičenie 13.11.2025-----
+
+Otázka 9: Aký je presný algoritmus spracovania priesvitných objektov s Z-bufferom? Prečo musíme triediť?
+Očakávaná odpoveď:
+
+1. Vykresli všetky nepriehľadné objekty s povoleným depth testom a zapisovaním,
+
+2. Setriď priesvitné objekty od najvzdialenejšieho po najbližší (back-to-front),
+
+3. Vykresli priesvitné objekty s glDepthMask(GL_FALSE) a glEnable(GL_BLEND).
+4. Triedime, pretože blending funguje: C_final = C_src × α + C_dst × (1-α). Ak by sme vykreslili blízky objekt pred vzdialeným, vzdialený objekt by sa zle blendoval s už vykresleným blízkym objektom. Triedenie zabezpečí správne vrstvenie.
+
+----
+
+Otázka 10: Čo je Z-fighting a ako technicky vzniká? Ako sa tomu bránime?
+Očakávaná odpoveď:
+Z-fighting vzniká, keď dva polygóny majú takmer rovnakú hodnotu Z a kvôli obmedzenej presnosti depth bufferu (typicky 24 bitov) a numerickým chybám pri interpolácii "bojujú" o to, ktorý bude viditeľný - výsledkom je blikajúci pattern.
+Riešenia:
+
+Polygon offset - glPolygonOffset posunie z-hodnoty o malý offset,
+
+Zvýšiť near plane (lepší rozklad presnosti),
+
+Používať 32-bitový depth buffer,
+
+Vyhnúť sa koplánárnym polygonom v modeli.
+
+----
+
+Otázka 28: Ako technicky funguje early-Z optimalizácia v moderných GPU? Prečo môže fragment shader túto optimalizáciu zablokovať?
+Očakávaná odpoveď:
+Early-Z (early depth test) vykoná depth test PRED fragment shaderom. Ak fragment neprejde depth testom, shader sa vôbec nespustí - čo znamená významnú úsporu výkonu. GPU to môže robiť, ak fragment shader:
+
+Nemodifikuje gl_FragDepth (nepíše ručne depth),
+
+Nevykonáva discard/alpha test,
+
+Nezapisuje do stencilu.
+Ak shader vykonáva discard, musí sa spustiť, aby zistil, či fragment prežil, takže early-Z nie je možné. Moderné GPU majú "re-Z" pass, ktorý aktualizuje depth po shaderi, ak fragment nebol discardnutý.
